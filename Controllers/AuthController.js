@@ -1,7 +1,7 @@
 const { hash, compare } = require("bcrypt");
 const { GetToken, ValidateToken } = require("../libs/jwt");
 const Code = require("../libs/responses");
-const { Credential } = require("../models/credential");
+const { Credential } = require("../models/credential.model");
 
 const Controller = {
   PostSignUp: async (req, res) => {
@@ -33,16 +33,18 @@ const Controller = {
       if (!user || !password)
         return res.status(400).send({ message: Code._400 });
 
-      const userFinded = await Credential.findOne({ user }).lean();
+      let userFinded = await Credential.findOne({ user }).lean();
       const validPass = await compare(password, userFinded.password);
 
       if (!validPass) return res.status(401).send(Code._401);
 
       let token = await GetToken(userFinded);
+      userFinded = { ...userFinded, password: undefined };
 
-      return res.status(200).send({ token });
+      return res.status(200).send({ token, user: userFinded });
     } catch (err) {
-      return res.status(500).send({ message: Code._500, err });
+      console.log(err);
+      return res.status(500).send({ message: Code._500, err: err.errors });
     }
   },
 
